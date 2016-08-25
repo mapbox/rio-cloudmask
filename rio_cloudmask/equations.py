@@ -525,4 +525,4 @@ def cloudmask(blue, green, red, nir, swir1, swir2,
         # grow around the edges
         pcl = maximum_filter(pcl, size=(13, 13))
 
-    return (~pcl * 255).astype('uint8')  # gdal-style
+    return pcl
