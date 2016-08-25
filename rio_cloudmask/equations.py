@@ -254,7 +254,7 @@ def water_temp_prob(water_temp, tirs):
     return (water_temp - tirs) / temp_const
 
 
-def brightness_prob(nir):
+def brightness_prob(nir, clip=True):
     """The brightest water may have Band 5 reflectance
     as high as 0.11
 
@@ -267,10 +267,14 @@ def brightness_prob(nir):
     Output
     ------
     ndarray:
-        brightness probability
+        brightness probability, constrained 0..1
     """
     thresh = 0.11
-    return np.minimum(thresh, nir) / thresh
+    bp = np.minimum(thresh, nir) / thresh
+    if clip:
+        bp[bp > 1] = 1
+        bp[bp < 0] = 0
+    return bp
 
 
 # Eq 11, water_cloud_prob
@@ -491,18 +495,20 @@ def cloudmask(blue, green, red, nir, swir1, swir2,
     pcps = potential_cloud_pixels(
         ndvi, ndsi, blue, green, red, nir, swir1, swir2, cirrus, tirs1)
 
+    cirrus_prob = cirrus / 0.04
+
     # Clouds over water
     tw = temp_water(water, swir2, tirs1)
     wtp = water_temp_prob(tw, tirs1)
     bp = brightness_prob(nir)
-    water_cloud_prob = wtp * bp
+    water_cloud_prob = (wtp * bp) + cirrus_prob
     wthreshold = 0.5
 
     # Clouds over land
     tlow, thigh = temp_land(pcps, water, tirs1)
     ltp = land_temp_prob(tirs1, tlow, thigh)
     vp = variability_prob(ndvi, ndsi, whiteness)
-    land_cloud_prob = ltp * vp
+    land_cloud_prob = (ltp * vp) + cirrus_prob
     lthreshold = land_threshold(land_cloud_prob, pcps, water)
 
     pcl = potential_cloud_layer(
