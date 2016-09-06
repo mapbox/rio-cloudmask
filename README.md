@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/mapbox/rio-cloudmask.svg?branch=master)](https://travis-ci.org/mapbox/rio-cloudmask)
-[![Coverage Status](https://coveralls.io/repos/mapbox/rio-cloudmask/badge.svg?branch=master&service=github)](https://coveralls.io/github/mapbox/rio-cloudmask?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/mapbox/rio-cloudmask/badge.svg?branch=master)](https://coveralls.io/github/mapbox/rio-cloudmask?branch=master)
 
 # rio-cloudmask
 
