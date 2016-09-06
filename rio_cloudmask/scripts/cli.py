@@ -51,7 +51,7 @@ def main(ctx,  dst_dtype, output, creation_options,
     with rasterio.open(red) as src:
         profile = src.profile.copy()
     profile.update(**creation_options)
-    profile['transform'] = guard_transform(profile['transform'])
+    profile['transform'] = guard_transform(profile['affine'])
     dst_dtype = dst_dtype if dst_dtype else profile['dtype']
     profile['dtype'] = dst_dtype
 
@@ -67,9 +67,9 @@ def main(ctx,  dst_dtype, output, creation_options,
     tirs_mask = np.isnan(tirs_arr) | (tirs_arr == 0)
 
     # Potential Cloud Layer
-    pcl = cloudmask(*arrs)
+    pcl, pcsl = cloudmask(*arrs)
 
-    gmask = ((~(pcl | tirs_mask)) * 255).astype('uint8')  # gdal-style
+    gmask = ((~(pcl | pcsl | tirs_mask)) * 255).astype('uint8')  # gdal-style
 
     with rasterio.open(output, 'w', **profile) as dst:
         dst.write(gmask, 1)
