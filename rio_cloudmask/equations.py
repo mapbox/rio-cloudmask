@@ -530,7 +530,7 @@ def cloudmask(blue, green, red, nir, swir1, swir2,
 
     """
     ndvi = calc_ndvi(red, nir)
-    ndsi = calc_ndvi(green, swir1)
+    ndsi = calc_ndsi(green, swir1)
     whiteness = whiteness_index(blue, green, red)
     water = water_test(ndvi, nir)
 
@@ -560,8 +560,8 @@ def cloudmask(blue, green, red, nir, swir1, swir2,
         water_cloud_prob, wthreshold)
 
     # TODO something something snow
-    # psl = potential_snow_layer(ndsi, green, nir, tirs1)
-    # pcl = pcl - psl
+    # pcl = pcl - psl ?
+    psl = potential_snow_layer(ndsi, green, nir, tirs1)
 
     pcsl = potential_cloud_shadow_layer(nir, swir1, water)
 
