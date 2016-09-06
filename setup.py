@@ -1,5 +1,4 @@
 import os
-import sys
 from setuptools import setup, find_packages
 
 with open('rio_cloudmask/__init__.py') as f:
@@ -19,10 +18,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
-inst_reqs = ["click", "rasterio", "rio-mucho"]
-
-if sys.version_info < (3, 4):
-    inst_reqs.append('enum34')
+inst_reqs = ["click", "rasterio", "rio-mucho", 'scipy']
 
 setup(
     name='rio-cloudmask',
