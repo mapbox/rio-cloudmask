@@ -23,11 +23,11 @@ def main():
 
     profile['dtype'] = 'uint8'
 
-    gmask = cloudmask(
+    clouds, shadows = cloudmask(
         blue, green, red, nir, swir1, swir2, cirrus, tirs1)
 
     with rasterio.open('pcl.tif', 'w', **profile) as dst:
-        dst.write(gmask, 1)
+        dst.write((~(clouds | shadows) * 255).astype('uint8'), 1)
 
 
 if __name__ == "__main__":

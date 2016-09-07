@@ -4,3 +4,5 @@ __pycache__
 .DS_Store
 .cache
 .coverage
+examples/_data
+.ipynb_checkpoints
