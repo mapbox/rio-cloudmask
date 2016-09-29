@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 # coding: utf8
 from __future__ import division
+import logging
 
 import numpy as np
+
+
+logger = logging.getLogger(__name__)
 
 
 def basic_test(ndvi, ndsi, swir2, tirs1):
@@ -531,6 +535,7 @@ def cloudmask(blue, green, red, nir, swir1, swir2,
         potential cloud shadow layer; True = cloud shadow
 
     """
+    logger.info("Running initial tests")
     ndvi = calc_ndvi(red, nir)
     ndsi = calc_ndsi(green, swir1)
     whiteness = whiteness_index(blue, green, red)
@@ -556,6 +561,7 @@ def cloudmask(blue, green, red, nir, swir1, swir2,
     land_cloud_prob = (ltp * vp) + cirrus_prob
     lthreshold = land_threshold(land_cloud_prob, pcps, water)
 
+    logger.info("Calculate potential clouds")
     pcloud = potential_cloud_layer(
         pcps, water, tirs1, tlow,
         land_cloud_prob, lthreshold,
@@ -566,6 +572,7 @@ def cloudmask(blue, green, red, nir, swir1, swir2,
     # psnow = potential_snow_layer(ndsi, green, nir, tirs1)
     # pcloud = pcloud & ~psnow
 
+    logger.info("Calculate potential cloud shadows")
     pshadow = potential_cloud_shadow_layer(nir, swir1, water)
 
     # The remainder of the algorithm differs significantly from Fmask
@@ -574,6 +581,8 @@ def cloudmask(blue, green, red, nir, swir1, swir2,
 
     if min_filter:
         # Remove outliers
+        logger.info("Remove outliers with minimum filter")
+
         from scipy.ndimage.filters import minimum_filter
         from scipy.ndimage.morphology import distance_transform_edt
 
@@ -590,6 +599,8 @@ def cloudmask(blue, green, red, nir, swir1, swir2,
 
     if max_filter:
         # grow around the edges
+        logger.info("Buffer edges with maximum filter")
+
         from scipy.ndimage.filters import maximum_filter
 
         pcloud = maximum_filter(pcloud, size=max_filter)
@@ -607,5 +618,3 @@ def gdal_nodata_mask(pcl, pcsl, tirs_arr):
     """
     tirs_mask = np.isnan(tirs_arr) | (tirs_arr == 0)
     return ((~(pcl | pcsl | tirs_mask)) * 255).astype('uint8')
-
-

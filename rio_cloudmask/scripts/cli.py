@@ -1,10 +1,14 @@
-import click
+import logging
 
+import click
+import numpy as np
 import rasterio
 from rasterio.rio.options import creation_options
 from rasterio.transform import guard_transform
 
 from rio_cloudmask.equations import cloudmask, gdal_nodata_mask
+
+logger = logging.getLogger(__name__)
 
 
 @click.command('cloudmask')
@@ -27,7 +31,7 @@ from rio_cloudmask.equations import cloudmask, gdal_nodata_mask
               help="grow cloud mask around edges by max_filter pixels")
 @click.option('--output', '-o', type=click.Path(exists=False), required=True)
 @creation_options
-def main(ctx,  dst_dtype, output, creation_options,
+def main(ctx, dst_dtype, output, creation_options,
          blue, green, red, nir, swir1, swir2, cirrus, tirs1,
          min_filter, max_filter):
     """Creates a cloud mask from Landsat 8 TOA input bands
@@ -78,15 +82,21 @@ def main(ctx,  dst_dtype, output, creation_options,
     # Due to the global (scene-wide) nature of the algorithm,
     # an independent window approach isn't easy
     # TODO make this more parallelizable and memory efficient
+    logger.info("Reading input bands")
     arrs = [rasterio.open(path).read(1)
             for path in (blue, green, red, nir, swir1, swir2, cirrus, tirs1)]
 
     # Thermal band defines basic nodata mask
     tirs_arr = arrs[-1]
 
+    # Quiet warnings related to NaNs and infs
+    np.seterr(invalid='ignore', divide='ignore')
+
     # Potential Cloud Layer
+    logger.info("Calculating mask")
     pcl, pcsl = cloudmask(*arrs, min_filter=min_filter, max_filter=max_filter)
     gmask = gdal_nodata_mask(pcl, pcsl, tirs_arr)
 
+    logger.info("Writing mask")
     with rasterio.open(output, 'w', **profile) as dst:
         dst.write(gmask, 1)
