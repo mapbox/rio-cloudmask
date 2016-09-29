@@ -47,7 +47,7 @@ def main(ctx,  dst_dtype, output, creation_options,
 
     \b
     You can use shell expansion to more easily list the arguments:
-        rio cloudmask LC8*_B[2-7]_toa.tif LC8*_B9_toa.tif LC8*_B10_temp.tif
+        rio cloudmask LC8*_B{2,3,4,5,6,7,9}_toa.tif LC8*_B10_temp.tif -o mask.tif
 
     output is a uint8 single-band tif with 0=cloud/nodata
     """

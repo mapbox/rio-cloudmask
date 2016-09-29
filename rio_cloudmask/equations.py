@@ -561,10 +561,10 @@ def cloudmask(blue, green, red, nir, swir1, swir2,
         land_cloud_prob, lthreshold,
         water_cloud_prob, wthreshold)
 
-    psnow = potential_snow_layer(ndsi, green, nir, tirs1)
-
-    # Remove any pixels from the mask if they might be snow
-    pcloud = pcloud & ~psnow
+    # Ignoring snow for now as it exhibits many false positives and negatives
+    # when used as a binary mask
+    # psnow = potential_snow_layer(ndsi, green, nir, tirs1)
+    # pcloud = pcloud & ~psnow
 
     pshadow = potential_cloud_shadow_layer(nir, swir1, water)
 
