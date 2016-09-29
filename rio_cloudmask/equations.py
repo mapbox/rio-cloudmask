@@ -502,7 +502,7 @@ def potential_snow_layer(ndsi, green, nir, tirs1):
 
 
 def cloudmask(blue, green, red, nir, swir1, swir2,
-              cirrus, tirs1, run_filter=True):
+              cirrus, tirs1, min_filter=(3, 3), max_filter=(21, 21)):
     """Calculate the potential cloud layer from source data
 
     *This is the high level function which ties together all
@@ -518,8 +518,10 @@ def cloudmask(blue, green, red, nir, swir1, swir2,
     swir2: ndarray
     cirrus: ndarray
     tirs1: ndarray
-    run_filter: boolean
-        Run scipy filters to remove outliers and smooth edges?
+    min_filter: 2-element tuple, default=(3,3)
+        Defines the window for the minimum_filter, for removing outliers
+    max_filter: 2-element tuple, default=(21, 21)
+        Defines the window for the maximum_filter, for "buffering" the edges
 
     Output
     ------
@@ -554,37 +556,56 @@ def cloudmask(blue, green, red, nir, swir1, swir2,
     land_cloud_prob = (ltp * vp) + cirrus_prob
     lthreshold = land_threshold(land_cloud_prob, pcps, water)
 
-    pcl = potential_cloud_layer(
+    pcloud = potential_cloud_layer(
         pcps, water, tirs1, tlow,
         land_cloud_prob, lthreshold,
         water_cloud_prob, wthreshold)
 
-    # TODO something something snow
-    # pcl = pcl - psl ?
-    psl = potential_snow_layer(ndsi, green, nir, tirs1)
+    psnow = potential_snow_layer(ndsi, green, nir, tirs1)
 
-    pcsl = potential_cloud_shadow_layer(nir, swir1, water)
+    # Remove any pixels from the mask if they might be snow
+    pcloud = pcloud & ~psnow
+
+    pshadow = potential_cloud_shadow_layer(nir, swir1, water)
 
     # The remainder of the algorithm differs significantly from Fmask
     # In an attempt to make a more visually appealling cloud mask
     # with fewer inclusions and more broad shapes
-    if run_filter:
-        from scipy.ndimage.filters import minimum_filter, maximum_filter
+
+    if min_filter:
+        # Remove outliers
+        from scipy.ndimage.filters import minimum_filter
+        from scipy.ndimage.morphology import distance_transform_edt
 
         # remove cloud outliers by nibbling the edges
-        pcl = minimum_filter(pcl, size=(5, 5))
+        pcloud = minimum_filter(pcloud, size=min_filter)
 
         # crude, just look x pixels away for potential cloud pixels
-        from scipy.ndimage.morphology import distance_transform_edt
-        dist = distance_transform_edt(~pcl)
+        dist = distance_transform_edt(~pcloud)
         pixel_radius = 100.0
-        pcsl = (dist < pixel_radius) & pcsl
+        pshadow = (dist < pixel_radius) & pshadow
 
         # remove cloud shadow outliers
-        pcsl = minimum_filter(pcsl, size=(5, 5))
+        pshadow = minimum_filter(pshadow, size=min_filter)
 
+    if max_filter:
         # grow around the edges
-        pcl = maximum_filter(pcl, size=(21, 21))
-        pcsl = maximum_filter(pcsl, size=(13, 13))
+        from scipy.ndimage.filters import maximum_filter
 
-    return pcl, pcsl
+        pcloud = maximum_filter(pcloud, size=max_filter)
+        pshadow = maximum_filter(pshadow, size=max_filter)
+
+    return pcloud, pshadow
+
+
+def gdal_nodata_mask(pcl, pcsl, tirs_arr):
+    """
+    Given a boolean potential cloud layer,
+    a potential cloud shadow layer and a thermal band
+
+    Calculate the GDAL-style uint8 mask
+    """
+    tirs_mask = np.isnan(tirs_arr) | (tirs_arr == 0)
+    return ((~(pcl | pcsl | tirs_mask)) * 255).astype('uint8')
+
+
