@@ -1,2 +1,2 @@
-rasterio
+rasterio>=1.0a1
 scipy
