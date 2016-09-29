@@ -22,13 +22,29 @@ def inputs():
     return data
 
 
-# test raise exception
-def test_exception(tmpdir, inputs):
+def test_output(tmpdir, inputs):
     output = str(tmpdir.join('test.tif'))
     runner = CliRunner()
 
     result = runner.invoke(
-        main, inputs + ["-o", output])
+        main, inputs + ['-o', output])
+
+    assert result.exit_code == 0
+    with rasterio.open(output) as src:
+        assert src.count == 1
+        assert src.meta['dtype'] == 'uint8'
+        arr = src.read(1)
+        assert sorted(list(np.unique(arr))) == [0, 255]  # only 0 and 255 values
+
+
+def test_nofilter(tmpdir, inputs):
+    output = str(tmpdir.join('test.tif'))
+    runner = CliRunner()
+
+    result = runner.invoke(
+        main, inputs + ['--min-filter', '0',
+                        '--max-filter', '0',
+                        '-o', output])
 
     assert result.exit_code == 0
     with rasterio.open(output) as src:
