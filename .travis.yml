@@ -25,7 +25,8 @@ before_install:
   - "pip install coveralls"
 install:
   - "pip wheel numpy"
-  - "pip install --use-wheel numpy"
+  - "pip install --use-wheel numpy cython"
+  - "pip install 'rasterio==1.0a1' --no-binary rasterio"
   - "pip wheel -r requirements.txt"
   - "pip install --use-wheel -r requirements.txt"
   - "pip install -e .[test]"
