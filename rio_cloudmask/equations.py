@@ -353,7 +353,9 @@ def variability_prob(ndvi, ndsi, whiteness):
     ndarray :
         probability of cloud over land based on variability
     """
-    return 1.0 - np.fmax(np.absolute(ndvi), np.absolute(ndsi), whiteness)
+    ndi_max = np.fmax(np.absolute(ndvi), np.absolute(ndsi))
+    f_max =  1.0 - np.fmax(ndi_max, whiteness)
+    return f_max
 
 
 # Eq 16, land_cloud_prob
